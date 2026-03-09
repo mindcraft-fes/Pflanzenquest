@@ -1,0 +1,25 @@
+{
+  "name": "Pflanzenquest",
+  "short_name": "Pflanzenquest",
+  "description": "Frühblüher & Pflanzenkunde für Klasse 5/6",
+  "start_url": "/Pflanzenquest/",
+  "scope": "/Pflanzenquest/",
+  "display": "standalone",
+  "background_color": "#071a07",
+  "theme_color": "#0a1f0a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "PflanzenLogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "PflanzenLogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

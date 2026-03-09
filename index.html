@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pflanzenquest</title>
+
+<!-- PWA -->
+<link rel="icon" type="image/png" href="PflanzenLogo.png">
+<link rel="apple-touch-icon" href="PflanzenLogo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pflanzenquest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1f0a">
+<link rel="manifest" href="pflanzen-manifest.json">
+
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:       #1b5e20;
+  --green-light: #2e7d32;
+  --green-mid:   #43a047;
+  --spring:      #f9a825;
+  --spring-dark: #c67c00;
+  --pink:        #ad1457;
+  --pink-light:  #e91e8c;
+  --bg:          #071a07;
+  --card:        #0d2610;
+  --card2:       #112e14;
+  --border:      rgba(255,255,255,0.1);
+  --text:        #e8f5e9;
+  --muted:       #7cb87e;
+  --gold:        #f9a825;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ══ STARTSCREEN ══ */
+#startScreen {
+  align-items: center; justify-content: center;
+  padding: 30px 20px;
+  background: radial-gradient(ellipse at 30% 40%, #0d3b10 0%, #071a07 65%);
+  gap: 8px;
+}
+.heroLogo {
+  width: clamp(90px,20vw,140px); height: auto;
+  animation: bob 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 18px rgba(67,160,71,0.4));
+  margin-bottom: 4px;
+}
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.heroTitle {
+  font-family: 'Baloo 2', cursive;
+  font-size: clamp(32px,7vw,66px); font-weight: 800; text-align: center; line-height: 1.1;
+  background: linear-gradient(135deg, #a5d6a7, #ffcc80);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.heroSub { font-size: clamp(13px,2.5vw,18px); color: var(--muted); text-align: center; margin-bottom: 16px; }
+
+.topRowBtns { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+.topBtn {
+  font-family: 'Nunito', sans-serif; font-size: clamp(14px,2vw,18px); font-weight: 800;
+  padding: 12px 28px; border-radius: 14px; border: 2px solid var(--border);
+  background: rgba(255,255,255,0.07); color: white; cursor: pointer; transition: background .2s;
+}
+.topBtn:hover { background: rgba(255,255,255,0.14); }
+.topBtn.gold { background: linear-gradient(135deg,var(--gold),var(--spring-dark)); border-color: transparent; color: #1a1a1a; display: none; }
+
+.moduleGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; width: min(860px,94vw); }
+.moduleCard {
+  background: var(--card); border: 2px solid var(--border); border-radius: 20px;
+  padding: 22px 18px; cursor: pointer; transition: transform .2s, border-color .2s;
+  text-align: center; position: relative; overflow: hidden;
+}
+.moduleCard:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.3); background: var(--card2); }
+.moduleCard .mIcon { font-size: 40px; margin-bottom: 8px; }
+.moduleCard h3 { font-family: 'Baloo 2', cursive; font-size: clamp(16px,2.2vw,20px); font-weight: 800; margin-bottom: 5px; }
+.moduleCard p { font-size: clamp(11px,1.6vw,13px); color: var(--muted); line-height: 1.4; }
+.mBadge { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 12px; border-radius: 20px; margin-top: 10px; }
+.badge-open   { background: var(--gold); color: #1a1a1a; }
+.badge-done   { background: var(--green-mid); color: white; }
+
+/* ══ NAME OVERLAY ══ */
+#nameOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.92); z-index: 200;
+  align-items: center; justify-content: center; padding: 30px 20px;
+}
+#nameOverlay.open { display: flex; }
+.nameCard {
+  background: var(--card); border: 1px solid var(--border); border-radius: 26px;
+  padding: clamp(28px,5vw,50px); width: min(420px,94vw); text-align: center;
+  animation: qIn .3s ease;
+}
+.nameCardIcon  { font-size: 56px; margin-bottom: 10px; }
+.nameCardTitle { font-family: 'Baloo 2', cursive; font-size: clamp(22px,4vw,32px); font-weight: 800; margin-bottom: 6px; }
+.nameCardSub   { font-size: clamp(13px,2vw,16px); color: var(--muted); margin-bottom: 22px; }
+.nameCardInput {
+  font-family: 'Nunito', sans-serif; font-size: clamp(18px,3vw,24px); font-weight: 700;
+  padding: 13px 18px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08); color: white; width: 100%; text-align: center;
+  margin-bottom: 16px; display: block;
+}
+.nameCardInput:focus { outline: none; border-color: var(--gold); }
+.nameCardBtn {
+  font-family: 'Baloo 2', cursive; font-size: clamp(18px,3vw,24px); font-weight: 800;
+  padding: 14px 40px; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--green-light), var(--green-mid));
+  color: white; cursor: pointer; box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+  transition: transform .1s; width: 100%;
+}
+.nameCardBtn:active { transform: translateY(3px); }
+
+/* ══ QUIZ SCREEN ══ */
+#quizScreen { align-items: center; padding: 16px 14px 50px; }
+.quizInner { width: min(820px,100%); display: flex; flex-direction: column; }
+.quizTopBar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+.iconBtn {
+  font-family: 'Nunito', sans-serif; font-size: clamp(14px,2vw,18px); font-weight: 700;
+  padding: 9px 20px; border-radius: 12px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.08); color: white; cursor: pointer; transition: background .2s;
+}
+.iconBtn:hover { background: rgba(255,255,255,0.16); }
+.quizModTitle { font-family: 'Baloo 2', cursive; font-size: clamp(16px,2.5vw,24px); font-weight: 800; }
+.quizProgress { font-size: 15px; color: var(--muted); font-weight: 700; }
+
+.progressBar { height: 12px; background: rgba(255,255,255,0.1); border-radius: 30px; overflow: hidden; margin-bottom: 18px; }
+.progressFill { height: 100%; background: linear-gradient(90deg, var(--green-mid), var(--spring)); border-radius: 30px; transition: width .5s ease; }
+
+.liveScore { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.liveScoreBadge { font-size: 13px; font-weight: 800; padding: 5px 14px; border-radius: 20px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); }
+.liveScoreBadge.green { background: rgba(46,204,113,0.2); border-color: #2ecc71; }
+.liveScoreBadge.red   { background: rgba(231,76,60,0.2);  border-color: #e74c3c; }
+
+.qCard { background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: clamp(18px,4vw,34px); animation: qIn .3s ease; }
+@keyframes qIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.qTypeTag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 12px; }
+.tag-erkennen  { background: rgba(233,30,140,0.2);  color: #f48fb1; border: 1px solid #e91e8c; }
+.tag-aufbau    { background: rgba(46,125,50,0.25);  color: #a5d6a7; border: 1px solid #2e7d32; }
+.tag-bestäubung{ background: rgba(249,168,37,0.2);  color: #ffd54f; border: 1px solid #f9a825; }
+.tag-wissen    { background: rgba(30,136,229,0.25); color: #90caf9; border: 1px solid #1e88e5; }
+.tag-jahreszeit{ background: rgba(142,36,170,0.25); color: #ce93d8; border: 1px solid #7b1fa2; }
+
+.qText { font-family: 'Baloo 2', cursive; font-size: clamp(18px,3.2vw,28px); font-weight: 600; line-height: 1.35; margin-bottom: 18px; }
+
+.qImage { width: 100%; max-width: 480px; border-radius: 14px; margin: 0 auto 18px; display: block; border: 2px solid var(--border); object-fit: cover; }
+.qImagePlaceholder {
+  width: 100%; max-width: 480px; margin: 0 auto 18px; border-radius: 14px;
+  border: 2px dashed rgba(255,255,255,0.2); background: var(--card2); padding: 28px;
+  text-align: center; font-size: 13px; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.qImagePlaceholder .pIcon { font-size: 36px; }
+
+.choicesGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width:480px){ .choicesGrid { grid-template-columns: 1fr; } }
+.choiceBtn {
+  font-family: 'Nunito', sans-serif; font-size: clamp(14px,2vw,19px); font-weight: 700;
+  padding: 14px 16px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.13);
+  background: rgba(255,255,255,0.06); color: white; cursor: pointer; transition: all .15s;
+  text-align: left; display: flex; align-items: center; gap: 10px;
+}
+.choiceBtn:hover:not(:disabled) { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.28); transform: translateX(3px); }
+.choiceLtr { min-width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+.choiceBtn.correct { background: rgba(46,204,113,0.22)!important; border-color: #2ecc71!important; }
+.choiceBtn.correct .choiceLtr { background: #2ecc71; }
+.choiceBtn.wrong   { background: rgba(231,76,60,0.22)!important;  border-color: #e74c3c!important; }
+.choiceBtn.wrong   .choiceLtr { background: #e74c3c; }
+
+.feedback { display: none; border-radius: 14px; padding: 14px 18px; margin-top: 14px; font-size: clamp(14px,2vw,17px); font-weight: 700; line-height: 1.5; animation: fadeIn .25s; }
+@keyframes fadeIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
+.feedback.correct { background: rgba(46,204,113,0.15); border: 2px solid #2ecc71; }
+.feedback.wrong   { background: rgba(231,76,60,0.15);  border: 2px solid #e74c3c; }
+
+.actionBtns { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.nextBtn {
+  font-family: 'Baloo 2', cursive; font-size: clamp(16px,2.5vw,22px); font-weight: 800;
+  padding: 13px 36px; border-radius: 14px; border: none;
+  background: linear-gradient(135deg,var(--green-light),var(--green-mid));
+  color: white; cursor: pointer; box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+  transition: transform .1s; display: none;
+}
+.nextBtn:active { transform: translateY(3px); }
+
+/* ══ RESULT ══ */
+#resultScreen { align-items: center; justify-content: center; padding: 30px 20px; background: radial-gradient(ellipse at center, #0d3b10 0%, #071a07 65%); }
+.resultCard { background: var(--card); border: 1px solid var(--border); border-radius: 26px; padding: clamp(24px,5vw,48px); width: min(540px,94vw); text-align: center; }
+.resultEmoji { font-size: clamp(60px,14vw,96px); margin-bottom: 8px; }
+.resultTitle { font-family: 'Baloo 2', cursive; font-size: clamp(24px,5vw,40px); font-weight: 800; margin-bottom: 6px; }
+.resultScore { font-size: clamp(44px,10vw,72px); font-weight: 800; color: var(--gold); }
+.resultMsg   { font-size: clamp(13px,2vw,17px); color: var(--muted); margin: 10px 0 16px; line-height: 1.5; }
+.passedBadge { background: linear-gradient(135deg,var(--gold),var(--spring-dark)); border-radius: 16px; padding: 16px; margin: 14px 0; display: none; }
+.passedBadge .pbt { font-family: 'Baloo 2', cursive; font-size: clamp(18px,3vw,26px); font-weight: 800; color: #1a1a1a; }
+.passedBadge .pbs { font-size: 13px; color: rgba(0,0,0,0.65); margin-top: 3px; }
+.resultBtns { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.rBtn { font-family: 'Baloo 2', cursive; font-size: clamp(16px,2.5vw,22px); font-weight: 800; padding: 13px 28px; border-radius: 14px; border: none; cursor: pointer; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.3); transition: transform .1s; }
+.rBtn:active { transform: translateY(3px); }
+.rBtn.retry { background: linear-gradient(135deg,var(--green-light),var(--green-mid)); }
+.rBtn.home  { background: rgba(255,255,255,0.08); border: 1px solid var(--border); }
+.rBtn.score { background: linear-gradient(135deg,#7b1fa2,#ab47bc); }
+
+/* ══ HIGHSCORE ══ */
+#highscoreOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.93); z-index: 300; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; overflow-y: auto; }
+#highscoreOverlay.open { display: flex; }
+.hsCard { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: clamp(20px,4vw,40px); width: min(500px,94vw); text-align: center; }
+.hsTitle { font-family: 'Baloo 2', cursive; font-size: clamp(24px,5vw,38px); font-weight: 800; margin-bottom: 12px; }
+.hsTabs { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+.hsTab { font-family: 'Nunito', sans-serif; font-size: clamp(12px,2vw,15px); font-weight: 800; padding: 7px 14px; border-radius: 20px; border: 2px solid var(--border); background: rgba(255,255,255,0.06); color: var(--muted); cursor: pointer; transition: all .2s; }
+.hsTab:hover { background: rgba(255,255,255,0.12); color: white; }
+.hsTab.active { background: linear-gradient(135deg,var(--green-light),var(--green-mid)); border-color: transparent; color: white; }
+.hsSub { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+#hsList { font-size: clamp(14px,2.2vw,19px); line-height: 1.9; text-align: left; min-height: 60px; }
+.hsEntry { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 8px; }
+.hsEntry .hsRank { font-size: 18px; min-width: 28px; }
+.hsEntry .hsName { font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hsEntry .hsMod  { font-size: 12px; color: var(--muted); }
+.hsEntry .hsPts  { color: var(--gold); font-weight: 800; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- STARTSCREEN -->
+<div id="startScreen" class="screen active">
+  <img src="PflanzenLogo.png" class="heroLogo" alt="Pflanzenquest Logo" onerror="this.style.display='none'">
+  <div class="heroTitle">Pflanzenquest</div>
+  <div class="heroSub">Frühblüher & Pflanzenkunde · Klasse 5 / 6</div>
+
+  <div class="topRowBtns">
+    <button class="topBtn" onclick="openHighscore()">🏆 Highscore</button>
+    <button class="topBtn gold" id="certBtn" onclick="showCert()">🌟 Meister!</button>
+  </div>
+
+  <div class="moduleGrid">
+    <div class="moduleCard" onclick="startModule('erkennen')" id="mc-erkennen">
+      <div class="mIcon">🌸</div>
+      <h3>Frühblüher erkennen</h3>
+      <p>Erkenne Frühblüher anhand von Bildern und Beschreibungen</p>
+      <div class="mBadge badge-open" id="mb-erkennen">Starten</div>
+    </div>
+    <div class="moduleCard" onclick="startModule('aufbau')" id="mc-aufbau">
+      <div class="mIcon">🌿</div>
+      <h3>Aufbau der Pflanze</h3>
+      <p>Lerne die Teile einer Blütenpflanze kennen</p>
+      <div class="mBadge badge-open" id="mb-aufbau">Starten</div>
+    </div>
+    <div class="moduleCard" onclick="startModule('bestaeubung')" id="mc-bestaeubung">
+      <div class="mIcon">🐝</div>
+      <h3>Bestäubung</h3>
+      <p>Wie werden Blüten bestäubt und warum ist das wichtig?</p>
+      <div class="mBadge badge-open" id="mb-bestaeubung">Starten</div>
+    </div>
+    <div class="moduleCard" onclick="startModule('wissen')" id="mc-wissen">
+      <div class="mIcon">📚</div>
+      <h3>Frühblüher-Wissen</h3>
+      <p>Spannende Fakten über Frühblüher und ihre Besonderheiten</p>
+      <div class="mBadge badge-open" id="mb-wissen">Starten</div>
+    </div>
+    <div class="moduleCard" onclick="startModule('jahreszeit')" id="mc-jahreszeit">
+      <div class="mIcon">☀️</div>
+      <h3>Jahreszeiten & Wachstum</h3>
+      <p>Wann blüht was? Wachstum und Jahreszeiten verstehen</p>
+      <div class="mBadge badge-open" id="mb-jahreszeit">Starten</div>
+    </div>
+  </div>
+</div>
+
+<!-- NAME OVERLAY -->
+<div id="nameOverlay">
+  <div class="nameCard">
+    <div class="nameCardIcon" id="nameCardIcon"></div>
+    <div class="nameCardTitle" id="nameCardTitle"></div>
+    <div class="nameCardSub">Gib deinen Namen ein, bevor es losgeht!</div>
+    <input class="nameCardInput" id="nameCardInput" type="text" placeholder="Dein Name..." maxlength="30" autocomplete="off">
+    <button class="nameCardBtn" onclick="confirmName()">Los geht's! →</button>
+  </div>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quizScreen" class="screen">
+  <div class="quizInner">
+    <div class="quizTopBar">
+      <button class="iconBtn" onclick="goHome()">⬅ Zurück</button>
+      <div class="quizModTitle" id="quizTitle"></div>
+      <div class="quizProgress" id="quizProg"></div>
+    </div>
+    <div class="progressBar"><div class="progressFill" id="progFill"></div></div>
+    <div class="liveScore">
+      <div class="liveScoreBadge green" id="lsCorrect">✅ 0 richtig</div>
+      <div class="liveScoreBadge red"   id="lsWrong">❌ 0 falsch</div>
+    </div>
+    <div class="qCard" id="qCard">
+      <div class="qTypeTag" id="qTypeTag"></div>
+      <div class="qText"    id="qText"></div>
+      <div id="qImage"></div>
+      <div id="qBody"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="actionBtns">
+        <button class="nextBtn" id="nextBtn" onclick="nextQ()">Weiter →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="resultScreen" class="screen">
+  <div class="resultCard">
+    <div class="resultEmoji" id="rEmoji"></div>
+    <div class="resultTitle"  id="rTitle"></div>
+    <div class="resultScore"  id="rScore"></div>
+    <div class="resultMsg"    id="rMsg"></div>
+    <div class="passedBadge"  id="passedBadge">
+      <div class="pbt">🌸 Modul bestanden!</div>
+      <div class="pbs" id="passedSub"></div>
+    </div>
+    <div class="resultBtns">
+      <button class="rBtn retry" onclick="retryMod()">🔁 Nochmal</button>
+      <button class="rBtn score" onclick="openHighscore()">🏆 Highscore</button>
+      <button class="rBtn home"  onclick="goHome()">🏠 Zur Übersicht</button>
+    </div>
+  </div>
+</div>
+
+<!-- HIGHSCORE OVERLAY -->
+<div id="highscoreOverlay">
+  <div class="hsCard">
+    <div class="hsTitle">🏆 Highscore</div>
+    <div class="hsTabs">
+      <button class="hsTab active" onclick="switchTab('alle')"        id="tab-alle">🌿 Alle</button>
+      <button class="hsTab"        onclick="switchTab('erkennen')"    id="tab-erkennen">🌸</button>
+      <button class="hsTab"        onclick="switchTab('aufbau')"      id="tab-aufbau">🌿</button>
+      <button class="hsTab"        onclick="switchTab('bestaeubung')" id="tab-bestaeubung">🐝</button>
+      <button class="hsTab"        onclick="switchTab('wissen')"      id="tab-wissen">📚</button>
+      <button class="hsTab"        onclick="switchTab('jahreszeit')"  id="tab-jahreszeit">☀️</button>
+    </div>
+    <div class="hsSub" id="hsSubTitle">Alle Module</div>
+    <div id="hsList">Lade...</div>
+    <div style="margin-top:14px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button class="iconBtn" onclick="loadHS()">🔄 Aktualisieren</button>
+      <button class="iconBtn" onclick="closeHighscore()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxoCCsEZ2ZTNNrWfrOUm5VWteRQDOfL_hB7lRSoKiI95WLzjevovotY7g8vJuN_Qiue/exec";
+
+// ═══════════════════════════════════════
+//  FRAGEN-DATENBANK
+// ═══════════════════════════════════════
+const MODULES = {
+
+  erkennen: {
+    title: "🌸 Frühblüher erkennen",
+    icon: "🌸", passMark: 7, total: 10,
+    questions: [
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Welche Pflanze blüht als eine der ersten im Jahr, oft sogar noch im Schnee?",
+        image:"schneeglöckchen.jpg",
+        choices:["Tulpe","Schneeglöckchen","Narzisse","Krokus"], answer:1,
+        explanation:"Das Schneeglöckchen ist eines der ersten Frühjahrsblüher und blüht oft schon im Januar/Februar, manchmal sogar durch den Schnee." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Welche Frühblüher-Farben hat der Krokus typischerweise?",
+        image:"krokus.jpg",
+        choices:["Nur gelb","Nur weiß","Lila, weiß oder gelb","Nur rot"], answer:2,
+        explanation:"Krokusse gibt es in vielen Farben: lila, weiß, gelb und gestreift. Sie gehören zu den beliebtesten Frühjahrsblühern." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Welche Pflanze hat eine trompetenartige gelbe Blüte und ist ein typischer Frühblüher?",
+        image:"narzisse.jpg",
+        choices:["Tulpe","Forsythie","Narzisse","Märzenbecher"], answer:2,
+        explanation:"Die Narzisse (auch Osterglocke) hat eine charakteristische trompetenförmige Blüte und blüht im März/April." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Welcher Strauch blüht komplett gelb BEVOR er Blätter bekommt?",
+        image:"forsythie.jpg",
+        choices:["Holunder","Forsythie","Flieder","Weißdorn"], answer:1,
+        explanation:"Die Forsythie blüht im März/April mit leuchtend gelben Blüten, bevor die Blätter austreiben – ein Zeichen des Frühlings!" },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Welcher Frühblüher hat einen orangen Blütenstaub und blüht schon im Februar?",
+        image:"huflattich.jpg",
+        choices:["Krokus","Schneeglöckchen","Huflattich","Tulpe"], answer:2,
+        explanation:"Der Huflattich blüht schon im Februar/März mit gelben Blüten, bevor seine großen Blätter erscheinen." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Wie sieht die Blüte des Buschwindröschens aus?",
+        image:"buschwindröschen.jpg",
+        choices:["Groß und rot","Klein, weiß, zart","Gelb und trompetenförmig","Blau und glockenförmig"], answer:1,
+        explanation:"Das Buschwindröschen hat zarte weiße Blüten und blüht im Frühjahr in Laubwäldern." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Der Märzenbecher sieht dem Schneeglöckchen ähnlich. Was ist der Hauptunterschied?",
+        image:"märzenbecher.jpg",
+        choices:["Der Märzenbecher ist rot","Der Märzenbecher hat größere Blüten mit grünem Rand","Er hat blaue Blüten","Er wächst im Wasser"], answer:1,
+        explanation:"Der Märzenbecher hat größere Blüten als das Schneeglöckchen mit einem deutlich grünen Rand an den Blütenblättern." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Welche Frühblüher-Pflanze trägt ihren Blütenstand als lila Traube?",
+        image:null,
+        choices:["Tulpe","Krokus","Lärchensporn","Narzisse"], answer:2,
+        explanation:"Der Lärchensporn trägt seine Blüten in lila oder roten Trauben und gehört zu den Frühblühern im Frühjahrswald." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Die Tulpe stammt ursprünglich aus welchem Land?",
+        image:"tulpe.jpg",
+        choices:["Holland","Deutschland","Türkei / Zentralasien","Japan"], answer:2,
+        explanation:"Die Tulpe stammt ursprünglich aus Zentralasien und der Türkei. In Holland wird sie heute in großen Mengen angebaut." },
+      { type:"multiple", tag:"Frühblüher erkennen", tagClass:"tag-erkennen",
+        question:"Welcher Baum beeindruckt im Frühling mit einer rosa-weißen Blütenpracht?",
+        image:"kirschblüte.jpg",
+        choices:["Eiche","Kirschbaum","Birke","Tanne"], answer:1,
+        explanation:"Der Kirschbaum bedeckt sich im Frühling mit wunderschönen rosa-weißen Blüten, bevor die Blätter kommen." }
+    ]
+  },
+
+  aufbau: {
+    title: "🌿 Aufbau der Pflanze",
+    icon: "🌿", passMark: 7, total: 10,
+    questions: [
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Welcher Teil der Pflanze nimmt Wasser und Nährstoffe aus dem Boden auf?",
+        image:null,
+        choices:["Blatt","Stängel","Wurzel","Blüte"], answer:2,
+        explanation:"Die Wurzel verankert die Pflanze im Boden und nimmt Wasser sowie Mineralstoffe auf." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Wo findet die Fotosynthese hauptsächlich statt?",
+        image:null,
+        choices:["In der Wurzel","In der Blüte","Im Blatt","Im Stängel"], answer:2,
+        explanation:"In den grünen Blättern findet die Fotosynthese statt: Mit Sonnenlicht, Wasser und CO₂ wird Zucker (Energie) hergestellt." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Was ist die Aufgabe des Stängels?",
+        image:null,
+        choices:["Fotosynthese betreiben","Wasser und Nährstoffe transportieren und die Pflanze stützen","Samen produzieren","Insekten anlocken"], answer:1,
+        explanation:"Der Stängel transportiert Wasser und Nährstoffe zwischen Wurzel und Blättern und gibt der Pflanze Halt." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Wie heißt der grüne Farbstoff in den Blättern, der für die Fotosynthese wichtig ist?",
+        image:null,
+        choices:["Karotin","Chlorophyll","Anthocyan","Melanin"], answer:1,
+        explanation:"Chlorophyll ist der grüne Farbstoff in Pflanzenzellen, der Lichtenergie für die Fotosynthese einfängt." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Welcher Teil der Blüte enthält den Blütenstaub (Pollen)?",
+        image:null,
+        choices:["Stempel","Kelchblatt","Staubblatt","Fruchtknoten"], answer:2,
+        explanation:"Die Staubblätter (Staubbeutel) produzieren den Pollen. Der Stempel ist das weibliche Organ." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Was entsteht aus dem Fruchtknoten nach der Befruchtung?",
+        image:null,
+        choices:["Eine neue Blüte","Die Frucht mit Samen","Neue Wurzeln","Blätter"], answer:1,
+        explanation:"Nach der Befruchtung entwickelt sich der Fruchtknoten zur Frucht, in der die Samen heranreifen." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Wofür sind die bunten Blütenblätter bei einer Blütenpflanze da?",
+        image:null,
+        choices:["Fotosynthese","Wasseraufnahme","Insekten und Bestäuber anlocken","Schutz vor Kälte"], answer:2,
+        explanation:"Die farbigen Blütenblätter locken Insekten wie Bienen und Schmetterlinge an, die dann die Bestäubung durchführen." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Was sind Kelchblätter?",
+        image:null,
+        choices:["Die bunten Blütenblätter","Die meist grünen äußeren Blätter die die Knospe schützen","Die Wurzelhaare","Die Samen"], answer:1,
+        explanation:"Kelchblätter sind meist grün und schützen die Blütenknospe bevor sie sich öffnet." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Was ist eine Zwiebel bei Pflanzen wie Tulpe oder Narzisse?",
+        image:null,
+        choices:["Ein Samen","Ein unterirdisches Speicherorgan","Eine besondere Wurzelart","Ein Pilz"], answer:1,
+        explanation:"Die Zwiebel ist ein unterirdisches Speicherorgan. Dort speichert die Pflanze Nährstoffe um im Frühling schnell austreiben zu können." },
+      { type:"multiple", tag:"Pflanzenaufbau", tagClass:"tag-aufbau",
+        question:"Durch welche winzigen Öffnungen in den Blättern tauscht die Pflanze Gase aus?",
+        image:null,
+        choices:["Poren","Stomata (Spaltöffnungen)","Lentizellen","Trichome"], answer:1,
+        explanation:"Stomata (Spaltöffnungen) sind winzige Poren in den Blättern. Durch sie nimmt die Pflanze CO₂ auf und gibt O₂ und Wasserdampf ab." }
+    ]
+  },
+
+  bestaeubung: {
+    title: "🐝 Bestäubung",
+    icon: "🐝", passMark: 7, total: 10,
+    questions: [
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Was versteht man unter Bestäubung bei Pflanzen?",
+        image:null,
+        choices:["Das Gießen der Pflanze","Die Übertragung von Pollen auf die Narbe einer Blüte","Das Pflanzen eines Samens","Die Aufnahme von Nährstoffen"], answer:1,
+        explanation:"Bestäubung ist die Übertragung von Pollen (Blütenstaub) vom Staubbeutel auf die Narbe – der erste Schritt zur Befruchtung." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Welches Tier ist der wichtigste Bestäuber bei Blütenpflanzen?",
+        image:null,
+        choices:["Regenwurm","Biene","Ameise","Schmetterlingsfisch"], answer:1,
+        explanation:"Bienen sind die wichtigsten Bestäuber. Auf der Suche nach Nektar übertragen sie Pollen von Blüte zu Blüte." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Was ist Nektar?",
+        image:null,
+        choices:["Der Blütenstaub der Pflanze","Ein giftiger Stoff","Ein zuckerhaltiger Saft den Blüten produzieren um Insekten anzulocken","Ein Düngemittel"], answer:2,
+        explanation:"Nektar ist ein süßer zuckerhaltiger Saft. Blüten produzieren ihn um Bienen, Schmetterlinge und andere Bestäuber anzulocken." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Was ist Windbestäubung?",
+        image:null,
+        choices:["Bestäubung durch Insekten bei Wind","Übertragung von Pollen durch den Wind ohne Insekten","Bestäubung durch Regen","Bestäubung durch Vögel"], answer:1,
+        explanation:"Bei der Windbestäubung (z.B. bei Gräsern und Birken) wird der leichte Pollen einfach durch den Wind verteilt." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Warum sind Frühblüher für Bienen besonders wichtig?",
+        image:null,
+        choices:["Weil sie giftig sind","Weil sie im frühen Frühling die erste Nahrung für Bienen nach dem Winter bieten","Weil Bienen sie nicht mögen","Weil sie keine Pollen haben"], answer:1,
+        explanation:"Frühblüher sind für Bienen überlebenswichtig! Nach dem Winter ist die erste Nahrung knapp – Frühblüher liefern den ersten Nektar und Pollen." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Was passiert nach der Bestäubung in der Blüte?",
+        image:null,
+        choices:["Die Pflanze stirbt","Der Pollen wandert zur Eizelle und befruchtet sie – daraus entsteht ein Samen","Die Blüte blüht nochmal","Nichts passiert"], answer:1,
+        explanation:"Nach der Bestäubung wandert der Pollenschlauch zur Eizelle im Fruchtknoten. Bei der Befruchtung entsteht ein Samen." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Welche Farben locken Bienen besonders an?",
+        image:null,
+        choices:["Nur rot","Blau, violett, gelb und weiß (Bienen sehen kein Rot)","Nur grün","Schwarz und weiß"], answer:1,
+        explanation:"Bienen sehen kein Rot, dafür aber UV-Licht. Sie werden besonders von blauen, violetten und gelben Blüten angezogen." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Was ist Fremdbestäubung?",
+        image:null,
+        choices:["Wenn eine Pflanze sich selbst bestäubt","Wenn Pollen von einer Pflanze auf eine andere Pflanze der gleichen Art überragen wird","Wenn Pollen im Wasser schwimmt","Wenn Tiere die Pflanze fressen"], answer:1,
+        explanation:"Bei der Fremdbestäubung wird Pollen von einer Pflanze auf eine andere übertragen – das fördert die genetische Vielfalt." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Warum ist das Verschwinden der Bienen ein Problem für uns Menschen?",
+        image:null,
+        choices:["Weil Bienen Honig produzieren der teuer ist","Weil ohne Bestäubung viele Nutzpflanzen keine Früchte und Samen bilden können","Weil Bienen dekorativ sind","Weil Bienen Schädlinge vertreiben"], answer:1,
+        explanation:"Ohne Bienen würden viele Nutzpflanzen (Obst, Gemüse) nicht bestäubt werden. Das würde die Nahrungsmittelversorgung weltweit gefährden." },
+      { type:"multiple", tag:"Bestäubung", tagClass:"tag-bestäubung",
+        question:"Was sammeln Bienen neben Nektar noch an Blüten?",
+        image:null,
+        choices:["Wasser","Pollen als Eiweißquelle für die Larven","Blütenblätter","Duftstoffe"], answer:1,
+        explanation:"Bienen sammeln Pollen als wichtige Eiweißquelle – besonders für die Aufzucht der Larven im Bienenstock." }
+    ]
+  },
+
+  wissen: {
+    title: "📚 Frühblüher-Wissen",
+    icon: "📚", passMark: 7, total: 10,
+    questions: [
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Warum blühen Frühblüher so früh im Jahr?",
+        image:null,
+        choices:["Weil es ihnen warm genug ist","Um Licht zu bekommen bevor die Bäume ihre Blätter ausbreiben und den Boden beschatten","Weil sie Frost mögen","Zufällig"], answer:1,
+        explanation:"Frühblüher nutzen das helle Frühjahrslicht bevor die Laubbäume ihre Blätter entfalten und den Waldboden beschatten." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Wie überlebt das Schneeglöckchen den Winter?",
+        image:null,
+        choices:["Es stirbt und wächst neu aus Samen","Es überlebt als unterirdische Zwiebel","Es friert ein und taut auf","Es wandert in warme Gebiete"], answer:1,
+        explanation:"Das Schneeglöckchen überwintert als Zwiebel im Boden. Die Zwiebel speichert Energie für den nächsten Frühling." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Welcher Frühblüher ist giftig für Menschen und Tiere?",
+        image:null,
+        choices:["Keine","Schneeglöckchen, Märzenbecher und Narzisse sind giftig","Nur die Tulpe","Nur der Krokus"], answer:1,
+        explanation:"Viele Frühblüher wie Schneeglöckchen, Märzenbecher und Narzissen sind giftig! Nie in den Mund nehmen." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Was bedeutet 'Geophyt'?",
+        image:null,
+        choices:["Eine Pflanze die nur im Gebirge wächst","Eine Pflanze die unterirdische Speicherorgane (Zwiebel, Knolle) hat","Eine giftige Pflanze","Eine Wasserpflanze"], answer:1,
+        explanation:"Geophyten sind Pflanzen mit unterirdischen Speicherorganen wie Zwiebeln oder Knollen. Viele Frühblüher sind Geophyten." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"In welchem Lebensraum findet man das Buschwindröschen typischerweise?",
+        image:null,
+        choices:["In Wüsten","In Hochgebirgen","In Laubwäldern und an Waldrändern","Im Wasser"], answer:2,
+        explanation:"Das Buschwindröschen wächst in Laubwäldern und an Waldrändern. Es blüht bevor die Baumblätter den Boden beschatten." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Was ist ein 'Frühblüher' genau?",
+        image:null,
+        choices:["Eine Pflanze die morgens früh blüht","Eine Pflanze die von Januar bis April blüht bevor der Frühling richtig beginnt","Eine tropische Pflanze","Eine einjährige Pflanze"], answer:1,
+        explanation:"Frühblüher sind Pflanzen die sehr früh im Jahr blühen – oft schon ab Januar/Februar bis in den April hinein." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Wozu dienen die Samen einer Pflanze?",
+        image:null,
+        choices:["Als Nahrung nur für Vögel","Zur Vermehrung – aus einem Samen wächst eine neue Pflanze","Als Speicher für Wasser","Als Schutz vor Insekten"], answer:1,
+        explanation:"Samen dienen der Vermehrung der Pflanze. Jeder Samen enthält einen kleinen Keimling und Nährstoffe für den Start." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Was ist der Unterschied zwischen einer einjährigen und einer mehrjährigen Pflanze?",
+        image:null,
+        choices:["Es gibt keinen Unterschied","Einjährige Pflanzen leben nur eine Saison, mehrjährige wachsen Jahr für Jahr neu aus","Mehrjährige Pflanzen sind größer","Einjährige Pflanzen blühen öfter"], answer:1,
+        explanation:"Einjährige Pflanzen keimen, blühen und sterben in einer Saison. Mehrjährige Pflanzen (wie Tulpen) kommen jedes Jahr wieder aus ihren Speicherorganen." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Was ist Ausbreitung bei Pflanzen (Samenverbreitung)?",
+        image:null,
+        choices:["Wenn die Pflanze wächst","Wie Samen von der Mutterpflanze an neue Orte gelangen (Wind, Tiere, Wasser)","Das Blühen der Pflanze","Die Aufnahme von Wasser"], answer:1,
+        explanation:"Samen werden auf verschiedene Wege verbreitet: durch Wind (Löwenzahn), Tiere (Kletten), Wasser oder durch die Pflanze selbst." },
+      { type:"multiple", tag:"Frühblüher-Wissen", tagClass:"tag-wissen",
+        question:"Welche Farbe hat der Saft der Narzisse und was bewirkt er?",
+        image:null,
+        choices:["Er ist blau und färbt die Hände","Er ist milchig-weiß und giftig/hautreizend","Er ist rot und süß","Er ist klar und harmlos"], answer:1,
+        explanation:"Der milchige Saft der Narzisse enthält giftige Stoffe und kann Hautreizungen verursachen. Nicht anfassen und dann die Augen reiben!" }
+    ]
+  },
+
+  jahreszeit: {
+    title: "☀️ Jahreszeiten & Wachstum",
+    icon: "☀️", passMark: 7, total: 10,
+    questions: [
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"In welcher Jahreszeit blühen die meisten Frühblüher?",
+        image:null,
+        choices:["Sommer","Herbst","Winter","Frühling (Februar bis April)"], answer:3,
+        explanation:"Frühblüher blühen im Frühling, viele schon ab Februar. Sie nutzen die Zeit bevor Sommerblumen und Bäume ihnen Konkurrenz machen." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Was passiert mit den Blättern der Laubbäume im Herbst?",
+        image:null,
+        choices:["Sie wachsen schneller","Sie verfärben sich und fallen ab","Sie werden grüner","Sie frieren ein"], answer:1,
+        explanation:"Im Herbst wird die Tageslichtstunden kürzer. Die Bäume stellen die Photosynthese ein, das Chlorophyll abbaut – die Blätter verfärben sich und fallen ab." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Was signalisiert Pflanzen, dass der Frühling beginnt?",
+        image:null,
+        choices:["Der Regen wird mehr","Die Temperaturen steigen und die Tage werden länger","Der Boden friert","Es schneit weniger"], answer:1,
+        explanation:"Steigende Temperaturen und längere Tage (mehr Sonnenstunden) signalisieren Pflanzen, dass es Zeit zum Austreiben ist." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Was ist Photosynthese einfach erklärt?",
+        image:null,
+        choices:["Das Trinken von Wasser","Die Herstellung von Zucker aus Sonnenlicht, Wasser und CO₂","Das Wachsen der Wurzeln","Die Blütenbildung"], answer:1,
+        explanation:"Photosynthese: Pflanze + Sonnenlicht + Wasser + CO₂ → Zucker (Energie) + Sauerstoff. Pflanzen produzieren damit ihren eigenen 'Kraftstoff'." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Warum ist der Frühling für viele Tiere besonders wichtig?",
+        image:null,
+        choices:["Weil es weniger regnet","Weil viele Tiere nach dem Winter Nahrung finden und ihre Jungen aufziehen","Weil es wärmer zum Schlafen ist","Weil es weniger Fressfeinde gibt"], answer:1,
+        explanation:"Im Frühling gibt es nach dem Winter wieder Nahrung. Viele Tiere paaren sich und ziehen ihre Jungen auf – eine Zeit der Erneuerung." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Was ist Keimung?",
+        image:null,
+        choices:["Das Abfallen der Blätter","Der Beginn des Wachstums wenn ein Samen aufgeht","Das Blühen der Pflanze","Das Absterben der Pflanze"], answer:1,
+        explanation:"Keimung ist der Beginn des Wachstums: Wenn Wärme, Wasser und Licht stimmen, bricht der Keimling aus dem Samen und wächst zur Pflanze." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Was passiert mit Frühblühern im Sommer wenn ihre Blütezeit vorbei ist?",
+        image:null,
+        choices:["Sie sterben komplett ab","Sie ziehen ihre oberirdischen Teile ein und überdauern als Zwiebel/Knolle im Boden","Sie blühen nochmal","Sie wandern in den Schatten"], answer:1,
+        explanation:"Viele Frühblüher (Tulpe, Narzisse) ziehen sich im Sommer komplett in ihre unterirdische Zwiebel zurück und ruhen dort bis zum nächsten Frühling." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Was bedeutet 'Vegetationsperiode'?",
+        image:null,
+        choices:["Die Zeit in der eine Pflanze gepflegt wird","Der Zeitraum im Jahr in dem Pflanzen aktiv wachsen (Frühling bis Herbst)","Die Blütezeit","Die Zeit nach der Ernte"], answer:1,
+        explanation:"Die Vegetationsperiode ist die Zeit aktiven Pflanzenwachstums – bei uns von März/April bis Oktober/November." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Wie nennt man die Erscheinung wenn Pflanzen und Tiere auf den Frühling reagieren?",
+        image:null,
+        choices:["Meteorologie","Phänologie – die Lehre von jahreszeitlichen Naturerscheinungen","Biologie","Ökologie"], answer:1,
+        explanation:"Die Phänologie beobachtet jahreszeitliche Naturerscheinungen wie den ersten Blühtag des Schneeglöckchens oder den Ruf des ersten Kuckucks." },
+      { type:"multiple", tag:"Jahreszeiten", tagClass:"tag-jahreszeit",
+        question:"Was ist Chlorophyll und welche Jahreszeit ist es am aktivsten?",
+        image:null,
+        choices:["Ein Pilz, aktiv im Herbst","Der grüne Blattfarbstoff der Pflanzen, am aktivsten im Frühling und Sommer","Ein Insekt, aktiv im Winter","Ein Bodenmineral"], answer:1,
+        explanation:"Chlorophyll ist der grüne Pflanzenfarbstoff der Photosynthese ermöglicht. Im Frühling/Sommer ist er am meisten aktiv – daher sind Pflanzen dann am grünsten." }
+    ]
+  }
+};
+
+// ═══════════════════════════════════════
+//  ZUSTAND
+// ═══════════════════════════════════════
+let curModule    = null;
+let pendingModule= null;
+let questions    = [];
+let curQ         = 0;
+let correct      = 0;
+let wrong        = 0;
+let answered     = false;
+let scoreSaved   = false;
+let modsDone     = {};
+let playerName   = '';
+let hsAllData    = [];
+let activeTab    = 'alle';
+
+const MODULE_LABELS = {
+  alle:        { label: 'Alle Module',          icon: '🌿' },
+  erkennen:    { label: 'Frühblüher erkennen',  icon: '🌸' },
+  aufbau:      { label: 'Aufbau der Pflanze',   icon: '🌿' },
+  bestaeubung: { label: 'Bestäubung',           icon: '🐝' },
+  wissen:      { label: 'Frühblüher-Wissen',    icon: '📚' },
+  jahreszeit:  { label: 'Jahreszeiten & Wachstum', icon: '☀️' }
+};
+
+// ═══════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goHome() { show('startScreen'); updateCards(); }
+
+function startModule(name) {
+  pendingModule = name;
+  const mod = MODULES[name];
+  document.getElementById('nameCardIcon').textContent  = mod.icon;
+  document.getElementById('nameCardTitle').textContent = mod.title;
+  document.getElementById('nameCardInput').value = playerName || '';
+  document.getElementById('nameCardInput').style.borderColor = '';
+  document.getElementById('nameOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('nameCardInput').focus(), 100);
+}
+
+function confirmName() {
+  const val = document.getElementById('nameCardInput').value.trim();
+  if (!val) { document.getElementById('nameCardInput').style.borderColor='#e74c3c'; return; }
+  playerName = val;
+  document.getElementById('nameOverlay').classList.remove('open');
+  curModule = pendingModule;
+  const mod = MODULES[curModule];
+  questions  = shuffle(mod.questions.slice());
+  curQ = 0; correct = 0; wrong = 0; answered = false; scoreSaved = false;
+  document.getElementById('quizTitle').textContent = mod.title;
+  show('quizScreen');
+  renderQ();
+}
+
+function retryMod() { startModule(curModule); }
+
+// ═══════════════════════════════════════
+//  FRAGE RENDERN
+// ═══════════════════════════════════════
+function renderQ() {
+  const q     = questions[curQ];
+  const total = questions.length;
+  answered = false;
+
+  document.getElementById('quizProg').textContent = (curQ+1) + ' / ' + total;
+  document.getElementById('progFill').style.width = (curQ/total*100) + '%';
+  document.getElementById('lsCorrect').textContent = '✅ ' + correct + ' richtig';
+  document.getElementById('lsWrong').textContent   = '❌ ' + wrong   + ' falsch';
+  document.getElementById('qTypeTag').textContent  = q.tag;
+  document.getElementById('qTypeTag').className    = 'qTypeTag ' + q.tagClass;
+  document.getElementById('qText').textContent     = q.question;
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('nextBtn').style.display  = 'none';
+
+  // Bild
+  const imgBox = document.getElementById('qImage');
+  imgBox.innerHTML = '';
+  if (q.image) {
+    const img = document.createElement('img');
+    img.src = q.image; img.className = 'qImage'; img.alt = q.tag;
+    imgBox.appendChild(img);
+  }
+
+  // Body
+  const body = document.getElementById('qBody');
+  body.innerHTML = '';
+  renderMultiple(q, body);
+
+  const card = document.getElementById('qCard');
+  card.style.animation = 'none';
+  requestAnimationFrame(() => { card.style.animation = ''; });
+}
+
+function renderMultiple(q, body) {
+  const grid = document.createElement('div');
+  grid.className = 'choicesGrid';
+  ['A','B','C','D'].forEach((ltr, i) => {
+    if (i >= q.choices.length) return;
+    const btn = document.createElement('button');
+    btn.className = 'choiceBtn';
+    btn.innerHTML = '<span class="choiceLtr">' + ltr + '</span>' + q.choices[i];
+    btn.onclick = () => checkAnswer(i, btn, q);
+    grid.appendChild(btn);
+  });
+  body.appendChild(grid);
+}
+
+function checkAnswer(i, btn, q) {
+  if (answered) return;
+  answered = true;
+  document.querySelectorAll('.choiceBtn').forEach(b => b.disabled = true);
+  if (i === q.answer) {
+    btn.classList.add('correct'); correct++;
+    showFeedback(true, '✅ Richtig! ' + q.explanation);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.choiceBtn')[q.answer].classList.add('correct');
+    wrong++;
+    showFeedback(false, '❌ Leider falsch. ' + q.explanation);
+  }
+  document.getElementById('lsCorrect').textContent = '✅ ' + correct + ' richtig';
+  document.getElementById('lsWrong').textContent   = '❌ ' + wrong   + ' falsch';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function showFeedback(ok, msg) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg;
+  fb.className   = 'feedback ' + (ok ? 'correct' : 'wrong');
+  fb.style.display = 'block';
+}
+
+function nextQ() {
+  curQ++;
+  if (curQ >= questions.length) showResult();
+  else renderQ();
+}
+
+// ═══════════════════════════════════════
+//  ERGEBNIS
+// ═══════════════════════════════════════
+function showResult() {
+  const mod    = MODULES[curModule];
+  const total  = questions.length;
+  const pct    = Math.round(correct / total * 100);
+  const passed = correct >= mod.passMark;
+
+  document.getElementById('progFill').style.width = '100%';
+  const emoji = pct>=90?'🏆':pct>=70?'🎉':pct>=50?'👍':'💪';
+  const title = pct>=90?'Hervorragend!':pct>=70?'Gut gemacht!':pct>=50?'Nicht schlecht!':'Weiter üben!';
+  const msg   = (playerName ? playerName + ': ' : '')
+    + (passed
+      ? 'Modul bestanden! ' + correct + ' von ' + total + ' richtig.'
+      : correct + ' von ' + total + ' richtig. Mind. ' + mod.passMark + ' zum Bestehen.');
+
+  document.getElementById('rEmoji').textContent = emoji;
+  document.getElementById('rTitle').textContent = title;
+  document.getElementById('rScore').textContent = correct + ' / ' + total;
+  document.getElementById('rMsg').textContent   = msg;
+
+  const badge = document.getElementById('passedBadge');
+  if (passed) {
+    badge.style.display = 'block';
+    document.getElementById('passedSub').textContent = mod.title + ' erfolgreich abgeschlossen!';
+    modsDone[curModule] = true;
+  } else {
+    badge.style.display = 'none';
+  }
+
+  saveScore();
+  show('resultScreen');
+  updateCards();
+}
+
+// ═══════════════════════════════════════
+//  MODULE CARDS UPDATE
+// ═══════════════════════════════════════
+function updateCards() {
+  Object.keys(MODULES).forEach(m => {
+    const badge = document.getElementById('mb-' + m);
+    if (!badge) return;
+    if (modsDone[m]) { badge.textContent = '✅ Bestanden'; badge.className = 'mBadge badge-done'; }
+  });
+  const allDone = Object.keys(modsDone).length >= 5;
+  document.getElementById('certBtn').style.display = allDone ? 'inline-block' : 'none';
+}
+
+function showCert() {
+  alert('🌸 Herzlichen Glückwunsch!\n\nDu hast alle 5 Module der Pflanzenquest bestanden!\n\nDu bist jetzt ein echter Pflanzenkenner! 🌱');
+}
+
+// ═══════════════════════════════════════
+//  HIGHSCORE
+// ═══════════════════════════════════════
+function openHighscore() {
+  document.getElementById('highscoreOverlay').classList.add('open');
+  switchTab(curModule || 'alle');
+  loadHS();
+}
+function closeHighscore() {
+  document.getElementById('highscoreOverlay').classList.remove('open');
+}
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.hsTab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.getElementById('tab-' + tab);
+  if (tabEl) tabEl.classList.add('active');
+  document.getElementById('hsSubTitle').textContent = MODULE_LABELS[tab]?.label || 'Alle Module';
+  renderHS();
+}
+function loadHS() {
+  document.getElementById('hsList').innerHTML = '<div style="color:var(--muted);padding:10px">Lade...</div>';
+  fetch(SCRIPT_URL)
+    .then(r => r.json())
+    .then(data => { hsAllData = data || []; renderHS(); })
+    .catch(() => { document.getElementById('hsList').innerHTML = '<div style="color:var(--muted)">Fehler beim Laden.</div>'; });
+}
+function renderHS() {
+  if (!hsAllData.length) { document.getElementById('hsList').innerHTML = '<div style="color:var(--muted)">Noch keine Einträge.</div>'; return; }
+  let filtered = hsAllData;
+  if (activeTab !== 'alle') {
+    const icon = MODULES[activeTab]?.icon;
+    filtered = hsAllData.filter(row => row[0] && row[0].includes(icon));
+  }
+  filtered = filtered.map(row => ({ rawName: row[0]||'', pts: parseInt(row[1])||0 }))
+    .sort((a,b) => b.pts - a.pts).slice(0,15);
+  if (!filtered.length) { document.getElementById('hsList').innerHTML = '<div style="color:var(--muted);padding:8px">Noch keine Einträge für dieses Modul.</div>'; return; }
+  let html = '';
+  filtered.forEach((entry, i) => {
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const rank  = medal || `<span style="color:var(--muted);font-size:14px">${i+1}.</span>`;
+    const modMatch = entry.rawName.match(/\[(.+?)\]/);
+    const modIcon  = modMatch ? modMatch[1] : '';
+    const cleanName = entry.rawName.replace(/\s*\[.+?\]/, '');
+    const modBadge = (activeTab === 'alle' && modIcon) ? `<span class="hsMod">${modIcon}</span>` : '';
+    html += `<div class="hsEntry"><span class="hsRank">${rank}</span><span class="hsName">${cleanName}</span>${modBadge}<span class="hsPts">${entry.pts} Pkt</span></div>`;
+  });
+  document.getElementById('hsList').innerHTML = html;
+}
+function saveScore() {
+  if (scoreSaved || !playerName) return;
+  scoreSaved = true;
+  const pts  = correct;
+  const icon = MODULES[curModule]?.icon || '';
+  fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ name: playerName + ' [' + icon + ']', score: pts }) });
+  setTimeout(() => loadHS(), 2000);
+}
+
+// ═══════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('nameCardInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmName();
+  });
+});
+</script>
+</body>
+</html>
